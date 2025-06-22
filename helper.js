@@ -11,11 +11,11 @@ function logStep(label, extra = {}) {
   } catch (e) {}
 }
 
-function clickWhenAvailable(selector, maxTries = 50, delay = 200, label = '') {
+function clickWhenAvailable(selector, maxTries = 50, delay = 200, label = '', extraCheck = null) {
   let tries = 0;
   const timer = setInterval(() => {
     const el = document.querySelector(selector);
-    if (el) {
+    if (el && (!extraCheck || extraCheck(el))) {
       el.click();
       clearInterval(timer);
       if (label) logStep(label);
