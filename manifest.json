@@ -1,0 +1,40 @@
+{
+  "name": "OCI Auth Buddy",
+  "description": "Automates Oracle Cloud authentication steps.",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": ["scripting", "tabs"],
+  "content_scripts": [
+    {
+      "matches": ["https://login.oci.oraclecloud.com/*"],
+      "js": ["scripts/oci-login.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["https://login.us-ashburn-1.oraclecloud.com/*"],
+      "js": ["scripts/oci-region.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["https://signon-int.oracle.com/signin*"],
+      "js": ["scripts/signon-int.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["http://localhost:8181/*"],
+      "js": ["scripts/localhost-close.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "host_permissions": [
+    "https://login.oci.oraclecloud.com/*",
+    "https://login.us-ashburn-1.oraclecloud.com/*",
+    "https://signon-int.oracle.com/signin*",
+    "http://localhost:8181/*"
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
