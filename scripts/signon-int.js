@@ -6,7 +6,7 @@
  * 7. Click "Verify passkey on device chrome"
  */
 
-clickWhenAvailable('#idcs-signin-basic-signin-form-submit', false, 50, 200, 'Step4: next');
-clickWhenAvailable('.idcs-signin-basic-signin-form-forgot-link', false, 50, 200, 'Step5: show other sign-in options');
-clickWhenAvailable('button[data-idcs-device-display-name="chrome"]', false, 50, 200, 'Step6: passkey on chrome');
-clickWhenAvailable('#idcs-mfa-mfa-auth-fido-submit-button', false, 50, 200, 'Step7: verify passkey on device chrome');
+clickWhenAvailable('#idcs-signin-basic-signin-form-submit', 50, 200, 'Step4: next');
+clickWhenAvailable('.idcs-signin-basic-signin-form-forgot-link', 50, 200, 'Step5: show other sign-in options');
+clickWhenAvailable('button[data-idcs-device-display-name="chrome"]', 50, 200, 'Step6: passkey on chrome');
+clickWhenAvailable('#idcs-mfa-mfa-auth-fido-submit-button', 50, 200, 'Step7: verify passkey on device chrome');

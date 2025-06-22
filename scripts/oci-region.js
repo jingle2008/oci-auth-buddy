@@ -3,4 +3,4 @@
  * Clicks the "Continue" button (#submit-federation)
  */
 
-clickWhenAvailable('#submit-federation', false, 50, 200, 'Step3: continue federation');
+clickWhenAvailable('#submit-federation', 50, 200, 'Step3: continue federation/sso');

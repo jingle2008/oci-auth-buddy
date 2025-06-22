@@ -4,5 +4,5 @@
  * 2. Click "Continue"
  */
 
-clickWhenAvailable('.session-change', false, 50, 200, 'Step1: diff-account');
-clickWhenAvailable('#submit-tenant', false, 50, 200, 'Step2: continue tenancy');
+clickWhenAvailable('.session-change', 50, 200, 'Step1: select a different user account');
+clickWhenAvailable('#submit-tenant', 50, 200, 'Step2: continue with boat tenancy');

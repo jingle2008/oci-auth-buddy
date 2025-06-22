@@ -1,9 +1,9 @@
 /**
  * Clicks an element when it becomes available.
- * @param {string} selectorOrText - CSS selector or button/link text (case-insensitive).
- * @param {boolean} [byText=false] - If true, match by text content; else, use querySelector.
+ * @param {string} selector - CSS selector for the element to click.
  * @param {number} [maxTries=50] - Max attempts before giving up.
  * @param {number} [delay=200] - Delay between attempts (ms).
+ * @param {string} [label=''] - Optional label for logging.
  */
 function logStep(label, extra = {}) {
   try {
@@ -11,16 +11,10 @@ function logStep(label, extra = {}) {
   } catch (e) {}
 }
 
-function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay = 200, label = '') {
+function clickWhenAvailable(selector, maxTries = 50, delay = 200, label = '') {
   let tries = 0;
   const timer = setInterval(() => {
-    let el;
-    if (byText) {
-      el = [...document.querySelectorAll('button, a, input[type="submit"]')]
-        .find(e => e.textContent.trim().toLowerCase() === selectorOrText.toLowerCase());
-    } else {
-      el = document.querySelector(selectorOrText);
-    }
+    const el = document.querySelector(selector);
     if (el) {
       el.click();
       clearInterval(timer);
