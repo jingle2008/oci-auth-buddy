@@ -3,7 +3,7 @@
   "description": "Automates Oracle Cloud authentication steps.",
   "version": "1.0",
   "manifest_version": 3,
-  "permissions": ["scripting", "tabs"],
+  "permissions": ["scripting", "tabs", "storage"],
   "content_scripts": [
     {
       "matches": ["https://login.oci.oraclecloud.com/*"],
@@ -26,6 +26,7 @@
       "run_at": "document_end"
     }
   ],
+  "background": { "service_worker": "background.js" },
   "host_permissions": [
     "https://login.oci.oraclecloud.com/*",
     "https://login.us-ashburn-1.oraclecloud.com/*",
@@ -36,5 +37,9 @@
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "View OCI Auth Buddy Logs"
   }
 }

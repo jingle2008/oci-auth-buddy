@@ -3,8 +3,13 @@
  * Clicks the "Continue" button (#submit-federation)
  */
 
-// Helper (inlined for content script compatibility)
-function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay = 200) {
+function logStep(label, extra = {}) {
+  try {
+    chrome.runtime.sendMessage({ type: 'STEP_LOG', payload: { label, ...extra }});
+  } catch (e) {}
+}
+
+function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay = 200, label = '') {
   let tries = 0;
   const timer = setInterval(() => {
     let el;
@@ -17,11 +22,12 @@ function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay
     if (el) {
       el.click();
       clearInterval(timer);
+      if (label) logStep(label);
     } else if (++tries > maxTries) {
       clearInterval(timer);
+      if (label) logStep(`${label} – NOT FOUND`);
     }
   }, delay);
 }
 
-// Step 3: "Continue" (federation submit)
-clickWhenAvailable('#submit-federation');
+clickWhenAvailable('#submit-federation', false, 50, 200, 'Step3: continue federation');

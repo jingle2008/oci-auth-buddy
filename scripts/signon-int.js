@@ -6,8 +6,13 @@
  * 7. Click "Verify passkey on device chrome"
  */
 
-// Helper (inlined for content script compatibility)
-function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay = 200) {
+function logStep(label, extra = {}) {
+  try {
+    chrome.runtime.sendMessage({ type: 'STEP_LOG', payload: { label, ...extra }});
+  } catch (e) {}
+}
+
+function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay = 200, label = '') {
   let tries = 0;
   const timer = setInterval(() => {
     let el;
@@ -20,20 +25,15 @@ function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay
     if (el) {
       el.click();
       clearInterval(timer);
+      if (label) logStep(label);
     } else if (++tries > maxTries) {
       clearInterval(timer);
+      if (label) logStep(`${label} – NOT FOUND`);
     }
   }, delay);
 }
 
-// Step 4: "Next"
-clickWhenAvailable('#idcs-signin-basic-signin-form-submit');
-
-// Step 5: "Show other sign-in options"
-clickWhenAvailable('.idcs-signin-basic-signin-form-forgot-link');
-
-// Step 6: "Passkey on chrome" (tile)
-clickWhenAvailable('button[data-idcs-device-display-name="chrome"]');
-
-// Step 7: "Verify passkey on device chrome"
-clickWhenAvailable('#idcs-mfa-mfa-auth-fido-submit-button');
+clickWhenAvailable('#idcs-signin-basic-signin-form-submit', false, 50, 200, 'Step4: next');
+clickWhenAvailable('.idcs-signin-basic-signin-form-forgot-link', false, 50, 200, 'Step5: show other sign-in options');
+clickWhenAvailable('button[data-idcs-device-display-name="chrome"]', false, 50, 200, 'Step6: passkey on chrome');
+clickWhenAvailable('#idcs-mfa-mfa-auth-fido-submit-button', false, 50, 200, 'Step7: verify passkey on device chrome');

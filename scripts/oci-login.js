@@ -4,8 +4,13 @@
  * 2. Click "Continue"
  */
 
-// Helper (inlined for content script compatibility)
-function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay = 200) {
+function logStep(label, extra = {}) {
+  try {
+    chrome.runtime.sendMessage({ type: 'STEP_LOG', payload: { label, ...extra }});
+  } catch (e) {}
+}
+
+function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay = 200, label = '') {
   let tries = 0;
   const timer = setInterval(() => {
     let el;
@@ -18,14 +23,13 @@ function clickWhenAvailable(selectorOrText, byText = false, maxTries = 50, delay
     if (el) {
       el.click();
       clearInterval(timer);
+      if (label) logStep(label);
     } else if (++tries > maxTries) {
       clearInterval(timer);
+      if (label) logStep(`${label} – NOT FOUND`);
     }
   }, delay);
 }
 
-// Step 1: "Sign in with a different user account"
-clickWhenAvailable('.session-change');
-
-// Step 2: "Continue" (tenancy submit)
-clickWhenAvailable('#submit-tenant');
+clickWhenAvailable('.session-change', false, 50, 200, 'Step1: diff-account');
+clickWhenAvailable('#submit-tenant', false, 50, 200, 'Step2: continue tenancy');
