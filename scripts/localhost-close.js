@@ -3,7 +3,7 @@
  */
 (function () {
   if (/authorization completed!/i.test(document.body.innerText)) {
-    logStep('Step8: Authorization completed, closing window');
-    setTimeout(() => window.close(), 300);
+    logStep('Step8: Authorization completed, closing tab');
+    chrome.runtime.sendMessage({ type: 'CLOSE_ME' });
   }
 })();

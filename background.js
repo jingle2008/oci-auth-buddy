@@ -12,4 +12,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     chrome.storage.local.set({ authLogs: steps });
     console.debug('AUTH-BUDDY:', entry);
   }
+  if (msg && msg.type === 'CLOSE_ME' && sender.tab && sender.tab.id) {
+    chrome.tabs.remove(sender.tab.id);
+  }
 });
