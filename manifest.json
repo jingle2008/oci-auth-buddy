@@ -24,6 +24,16 @@
       "matches": ["http://localhost:8181/*"],
       "js": ["helper.js", "scripts/localhost-close.js"],
       "run_at": "document_end"
+    },
+    {
+      "matches": ["https://www.oracle.com/cloud/sign-in.html*"],
+      "js": ["helper.js", "scripts/oci-cloud-signin.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["https://cloud.oracle.com/*"],
+      "js": ["helper.js", "scripts/oci-acknowledge.js"],
+      "run_at": "document_end"
     }
   ],
   "background": { "service_worker": "background.js" },
