@@ -8,32 +8,32 @@
     {
       "matches": ["https://login.oci.oraclecloud.com/*"],
       "js": ["helper.js", "scripts/login-1-account.js"],
-      "run_at": "document_end"
+      "run_at": "document_idle"
     },
     {
       "matches": ["https://login.us-ashburn-1.oraclecloud.com/*"],
       "js": ["helper.js", "scripts/login-2-sso.js"],
-      "run_at": "document_end"
+      "run_at": "document_idle"
     },
     {
       "matches": ["https://signon-int.oracle.com/signin*"],
       "js": ["helper.js", "scripts/login-3-mfa.js"],
-      "run_at": "document_end"
+      "run_at": "document_idle"
     },
     {
       "matches": ["http://localhost:8181/*"],
       "js": ["helper.js", "scripts/login-complete.js"],
-      "run_at": "document_end"
+      "run_at": "document_idle"
     },
     {
       "matches": ["https://www.oracle.com/cloud/sign-in.html*"],
-      "js": ["helper.js", "scripts/oci-console-signin.js"],
-      "run_at": "document_end"
+      "js": ["helper.js", "scripts/console-login.js"],
+      "run_at": "document_idle"
     },
     {
       "matches": ["https://cloud.oracle.com/*"],
-      "js": ["helper.js", "scripts/oci-console.js"],
-      "run_at": "document_end"
+      "js": ["helper.js", "scripts/console-home.js"],
+      "run_at": "document_idle"
     }
   ],
   "background": { "service_worker": "background.js" },

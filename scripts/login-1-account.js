@@ -1,11 +1,8 @@
 // https://login.oci.oraclecloud.com/
 
 // Sign in with a different user account
-waitForElement('.session-change', 50, 200)
-  .then(el => {
-    clickElement(el);
+const changeBtn = document.querySelector('.session-change');
+clickElement(changeBtn);
 
-    // Continue with default tenant
-    waitForElement('#submit-tenant', 50, 200)
-      .then(el => clickElement(el));
-  });
+const submitBtn = document.querySelector('#submit-tenant');
+clickElement(submitBtn);

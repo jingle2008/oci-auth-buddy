@@ -2,7 +2,7 @@
  * Closes the window if "Authorization completed!" is detected on http://localhost:8181/*
  */
 
-waitForElement("body", 50, 200,
+waitForElement("body", 5, 200,
   el => el.innerText.length > 0)
   .then(el => {
     if (/authorization completed!/i.test(el.innerText)) {

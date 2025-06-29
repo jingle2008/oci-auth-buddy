@@ -43,11 +43,19 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
     const qs = sel => document.querySelector(sel);
     const check = () => {
       const el = qs(selector);
-      writeLog(`waiting for element with selector: ${selector}`);
-      if (el && (!predicate || predicate(el))) {
-        cleanup();
-        resolve(el);
-        return true;
+      if (el) {
+        // && 
+        writeLog(`element with selector "${selector}" is found.`)
+        if (!predicate || predicate(el)) {
+          writeLog(`element with selector "${selector}" is ready.`);
+          cleanup();
+          resolve(el);
+          return true;
+        } else {
+          writeLog(`element with selector "${selector}" is not ready.`);
+        }
+      } else {
+        writeLog(`element with selector "${selector}" not found.`);
       }
       return false;
     };
@@ -56,12 +64,11 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
 
     timer = setInterval(() => {
       if (finished) return;
-
       if (check()) return;
 
       if (++tries > maxTries) {
         cleanup();
-        writeLog(`element with selector ${selector} not found after ${maxTries * delay}ms`);
+        writeLog(`element with selector "${selector}" not found after ${maxTries * delay}ms`);
         resolve(null);
       }
     }, delay);
