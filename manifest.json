@@ -22,7 +22,7 @@
     },
     {
       "matches": ["http://localhost:8181/*"],
-      "js": ["helper.js", "scripts/localhost-close.js"],
+      "js": ["helper.js", "scripts/login-complete.js"],
       "run_at": "document_end"
     },
     {

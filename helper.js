@@ -1,8 +1,8 @@
 const appTag = '[auth-buddy]';
 
-function writeLog(message, extra = {}) {
+function writeLog(message) {
   try {
-    chrome.runtime.sendMessage({ type: 'WRITE_LOG', payload: { label: message, ...extra } });
+    chrome.runtime.sendMessage({ type: 'WRITE_LOG', payload: message });
   } catch (e) {
     console.warn(appTag, 'Failed to log task:', e);
   }
@@ -21,6 +21,7 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
   return new Promise((resolve, reject) => {
     let tries = 0;
     let finished = false;
+    let timer = null;
 
     function cleanup() {
       finished = true;
@@ -42,6 +43,7 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
     const qs = sel => document.querySelector(sel);
     const check = () => {
       const el = qs(selector);
+      writeLog(`waiting for element with selector: ${selector}`);
       if (el && (!predicate || predicate(el))) {
         cleanup();
         resolve(el);
@@ -52,14 +54,14 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
 
     if (check()) return;
 
-    const timer = setInterval(() => {
+    timer = setInterval(() => {
       if (finished) return;
 
       if (check()) return;
 
       if (++tries > maxTries) {
         cleanup();
-        writeLog(`element not found after ${maxTries * delay}ms`, { selector });
+        writeLog(`element with selector ${selector} not found after ${maxTries * delay}ms`);
         resolve(null);
       }
     }, delay);

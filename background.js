@@ -9,7 +9,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === 'WRITE_LOG') {
-    const entry = { time: new Date().toISOString(), ...msg.payload };
+    const entry = { time: new Date().toISOString(), message: msg.payload };
     messages.push(entry);
     chrome.storage.local.set({ authLogs: messages });
   }
