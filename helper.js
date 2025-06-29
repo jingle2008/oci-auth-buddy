@@ -1,31 +1,103 @@
-/**
- * Clicks an element when it becomes available.
- * @param {string} selector - CSS selector for the element to click.
- * @param {number} [maxTries=50] - Max attempts before giving up.
- * @param {number} [delay=200] - Delay between attempts (ms).
- * @param {string} [label=''] - Optional label for logging.
- */
-function logStep(label, extra = {}) {
+const appTag = '[auth-buddy]';
+
+function writeLog(message, extra = {}) {
   try {
-    chrome.runtime.sendMessage({ type: 'STEP_LOG', payload: { label, ...extra }});
-  } catch (e) {}
+    chrome.runtime.sendMessage({ type: 'WRITE_LOG', payload: { label: message, ...extra } });
+  } catch (e) {
+    console.warn(appTag, 'Failed to log task:', e);
+  }
 }
 
-function clickWhenAvailable(selector, maxTries = 50, delay = 200, label = '', extraCheck = null) {
-  let tries = 0;
-  const timer = setInterval(() => {
-    const el = document.querySelector(selector);
-    if (el && (!extraCheck || extraCheck(el))) {
-      el.click();
-      clearInterval(timer);
-      if (label) logStep(label);
-    } else if (++tries > maxTries) {
-      clearInterval(timer);
-      if (label) logStep(`${label} – NOT FOUND`);
+/**
+ * Waits for an element to exist and satisfy a predicate.
+ * @param {string} selector - CSS selector for the element.
+ * @param {number} [maxTries=50] - Max attempts before giving up.
+ * @param {number} [delay=200] - Delay between attempts (ms).
+ * @param {function} [predicate=null] - Optional function to further check the element.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel polling.
+ * @returns {Promise<HTMLElement|null>}
+ */
+function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, signal = undefined) {
+  return new Promise((resolve, reject) => {
+    let tries = 0;
+    let finished = false;
+
+    function cleanup() {
+      finished = true;
+      if (timer) clearInterval(timer);
+      if (signal) signal.removeEventListener('abort', onAbort);
     }
-  }, delay);
+
+    function onAbort() {
+      cleanup();
+      reject(new DOMException('Aborted', 'AbortError'));
+    }
+
+    if (signal) {
+      if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
+      signal.addEventListener('abort', onAbort);
+    }
+
+    // Immediate first check
+    const qs = sel => document.querySelector(sel);
+    const check = () => {
+      const el = qs(selector);
+      if (el && (!predicate || predicate(el))) {
+        cleanup();
+        resolve(el);
+        return true;
+      }
+      return false;
+    };
+
+    if (check()) return;
+
+    const timer = setInterval(() => {
+      if (finished) return;
+
+      if (check()) return;
+
+      if (++tries > maxTries) {
+        cleanup();
+        writeLog(`element not found after ${maxTries * delay}ms`, { selector });
+        resolve(null);
+      }
+    }, delay);
+  });
+}
+
+/**
+ * Clicks a given element and logs the task.
+ * @param {HTMLElement} el - The element to click.
+ */
+function clickElement(el) {
+  if (!el) {
+    writeLog("clickElement called with null element");
+    return;
+  }
+
+  el.click();
+  writeLog("clicked element successfully");
+}
+
+/**
+ * Fills a given input element and logs the task.
+ * @param {HTMLElement} el - The input element.
+ * @param {string} value - Value to set.
+ */
+function fillInputElement(el, value) {
+  if (!el) {
+    writeLog("fillInputElement called with null element");
+    return;
+  }
+
+  el.value = value;
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  writeLog("filled input element successfully", { value });
 }
 
 // Expose globally for all content scripts
-window.logStep = logStep;
-window.clickWhenAvailable = clickWhenAvailable;
+window.writeLog = writeLog;
+window.waitForElement = waitForElement;
+window.clickElement = clickElement;
+window.fillInputElement = fillInputElement;

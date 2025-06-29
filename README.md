@@ -1,6 +1,6 @@
 # OCI Auth Buddy
 
-A Chrome extension to automate Oracle Cloud authentication steps.
+A Chrome extension to automate Oracle Cloud authentication tasks.
 
 ## Features
 

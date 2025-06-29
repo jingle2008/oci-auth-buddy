@@ -3,16 +3,17 @@
  * Receives log messages from content scripts, stores in memory and chrome.storage.local, and prints to console.
  */
 
-const steps = [];
+const messages = [];
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg && msg.type === 'STEP_LOG') {
+  if (!msg || !msg.type) return;
+
+  if (msg.type === 'WRITE_LOG') {
     const entry = { time: new Date().toISOString(), ...msg.payload };
-    steps.push(entry);
-    chrome.storage.local.set({ authLogs: steps });
-    console.debug('AUTH-BUDDY:', entry);
+    messages.push(entry);
+    chrome.storage.local.set({ authLogs: messages });
   }
-  if (msg && msg.type === 'CLOSE_ME' && sender.tab && sender.tab.id) {
+  else if (msg.type === 'CLOSE_ME' && sender.tab && sender.tab.id) {
     chrome.tabs.remove(sender.tab.id);
   }
 });
