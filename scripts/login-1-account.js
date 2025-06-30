@@ -1,8 +1,13 @@
 // https://login.oci.oraclecloud.com/
 
-// Sign in with a different user account
-const changeBtn = document.querySelector('.session-change');
-clickElement(changeBtn);
+// Wait for the script to run
+setTimeout(onPageReady, 500);
 
-const submitBtn = document.querySelector('#submit-tenant');
-clickElement(submitBtn);
+function onPageReady() {
+  // Sign in with a different user account
+  const changeBtn = document.querySelector('.session-change');
+  clickElement(changeBtn);
+
+  const submitBtn = document.querySelector('#submit-tenant');
+  clickElement(submitBtn);
+}
