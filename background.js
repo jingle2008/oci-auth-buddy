@@ -5,13 +5,35 @@
 
 const messages = [];
 
+/**
+ * Short label for the page a log came from, e.g. `login.oci.oraclecloud.com/v2/ui/signin`.
+ * @param {object} sender - chrome.runtime message sender.
+ * @returns {string}
+ */
+function pageLabel(sender) {
+  const url = sender && (sender.url || (sender.tab && sender.tab.url));
+  if (!url) return 'unknown page';
+
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname + parsed.pathname;
+  } catch (e) {
+    return url;
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === 'WRITE_LOG') {
-    const entry = { time: new Date().toISOString(), message: msg.payload };
+    const entry = {
+      time: new Date().toISOString(),
+      page: pageLabel(sender),
+      message: msg.payload,
+    };
     messages.push(entry);
     chrome.storage.local.set({ authLogs: messages });
+    console.log(`${entry.time} [${entry.page}] ${entry.message}`);
   }
   else if (msg.type === 'CLOSE_ME' && sender.tab && sender.tab.id) {
     chrome.tabs.remove(sender.tab.id);

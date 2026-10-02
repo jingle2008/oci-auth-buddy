@@ -9,6 +9,27 @@ function writeLog(message) {
 }
 
 /**
+ * Builds a short, human readable description of an element for logs,
+ * e.g. `button#submit-domain "Continue"`.
+ * @param {HTMLElement|null} el
+ * @returns {string}
+ */
+function describeElement(el) {
+  if (!el) return 'null element';
+
+  let desc = el.tagName ? el.tagName.toLowerCase() : 'node';
+  if (el.id) desc += `#${el.id}`;
+
+  const label = typeof el.getAttribute === 'function' ? el.getAttribute('aria-label') : null;
+  if (label) desc += `[aria-label="${label}"]`;
+
+  const text = (el.innerText || el.textContent || '').trim().replace(/\s+/g, ' ');
+  if (text) desc += ` "${text.length > 40 ? text.slice(0, 40) + '\u2026' : text}"`;
+
+  return desc;
+}
+
+/**
  * Waits for an element to exist and satisfy a predicate.
  * @param {string} selector - CSS selector for the element.
  * @param {number} [maxTries=50] - Max attempts before giving up.
@@ -39,23 +60,27 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
       signal.addEventListener('abort', onAbort);
     }
 
+    writeLog(`waiting for "${selector}"`);
+
+    // Log the "present but not ready" state only on the first occurrence,
+    // so polling does not flood the log with one entry per attempt.
+    let loggedNotReady = false;
+
     // Immediate first check
-    const qs = sel => document.querySelector(sel);
     const check = () => {
-      const el = qs(selector);
-      if (el) {
-        // && 
-        writeLog(`element with selector "${selector}" is found.`)
-        if (!predicate || predicate(el)) {
-          writeLog(`element with selector "${selector}" is ready.`);
-          cleanup();
-          resolve(el);
-          return true;
-        } else {
-          writeLog(`element with selector "${selector}" is not ready.`);
-        }
-      } else {
-        writeLog(`element with selector "${selector}" not found.`);
+      const el = document.querySelector(selector);
+      if (!el) return false;
+
+      if (!predicate || predicate(el)) {
+        writeLog(`matched "${selector}": ${describeElement(el)}`);
+        cleanup();
+        resolve(el);
+        return true;
+      }
+
+      if (!loggedNotReady) {
+        loggedNotReady = true;
+        writeLog(`matched "${selector}" but not ready yet: ${describeElement(el)}`);
       }
       return false;
     };
@@ -68,7 +93,7 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
 
       if (++tries > maxTries) {
         cleanup();
-        writeLog(`element with selector "${selector}" not found after ${maxTries * delay}ms`);
+        writeLog(`gave up waiting for "${selector}" after ${maxTries * delay}ms`);
         resolve(null);
       }
     }, delay);
@@ -86,7 +111,7 @@ function clickElement(el) {
   }
 
   el.click();
-  writeLog("clicked element successfully");
+  writeLog(`clicked ${describeElement(el)}`);
 }
 
 /**
@@ -102,11 +127,22 @@ function fillInputElement(el, value) {
 
   el.value = value;
   el.dispatchEvent(new Event('input', { bubbles: true }));
-  writeLog("filled input element successfully", { value });
+  writeLog(`filled ${describeElement(el)} with "${value}"`);
 }
+
+// Announce the page as soon as the script is injected, before any script's
+// own delay, so the log shows the navigation order rather than the order in
+// which each script happened to act. The background worker labels the entry
+// with the sending tab's URL.
+writeLog('content script injected');
+
+// A wait that is still pending when the page navigates away goes silent,
+// which previously looked like a stall. Record the teardown instead.
+window.addEventListener('pagehide', () => writeLog('page unloaded'));
 
 // Expose globally for all content scripts
 window.writeLog = writeLog;
+window.describeElement = describeElement;
 window.waitForElement = waitForElement;
 window.clickElement = clickElement;
 window.fillInputElement = fillInputElement;
