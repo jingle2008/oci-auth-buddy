@@ -1,28 +1,25 @@
 // https://signon-int.oracle.com/signin
 // https://signon.oci.oracleiaas.com/signin
 
-// These are Oracle JET <oj-button> custom elements. The id sits on the
-// wrapper, but the clickable target is the native <button> that JET renders
-// inside it, and that inner button only exists once JET has upgraded the
-// wrapper. Clicking the wrapper before then does nothing, and clicking the
-// wrapper at all does not necessarily raise the component's action event.
+// These buttons are Oracle JET <oj-button> custom elements. The id is on the
+// wrapper, but the clickable target is the native <button> JET renders inside
+// it, so each selector matches that inner button directly: the element handed
+// back is then the one clicked, with no second lookup that a re-render could
+// invalidate, and a wrapper JET has not upgraded yet simply does not match.
 const SIGN_IN_SELECTOR = '#idcs-signin-basic-signin-form-submit';
 const FIDO_SELECTOR = '#idcs-mfa-mfa-auth-fido-submit-button';
 
-function innerButton(el) {
-  return el.matches('button') ? el : el.querySelector('button');
+// Matches the inner native button, or the element itself if the page uses a
+// plain <button> under that id.
+function nativeButton(selector) {
+  return `${selector} button, button${selector}`;
 }
 
-function isButtonReady(el) {
-  const btn = innerButton(el);
-  return !!btn
-    && !btn.disabled
-    && !el.classList.contains('oj-disabled')
-    && el.offsetParent !== null;
-}
-
-function clickButton(el) {
-  clickElement(innerButton(el));
+function isButtonReady(btn) {
+  const wrapper = btn.closest('oj-button');
+  return !btn.disabled
+    && btn.offsetParent !== null
+    && !(wrapper && wrapper.classList.contains('oj-disabled'));
 }
 
 function closeBitwardenPopup() {
@@ -33,22 +30,27 @@ function closeBitwardenPopup() {
 // The sign-in step and the passkey step can share one document, since JET
 // swaps the form in place without a navigation. So click whichever button is
 // ready, and if it was the sign-in button, keep waiting for the passkey one.
-waitForElement(`${SIGN_IN_SELECTOR}, ${FIDO_SELECTOR}`, 50, 200, isButtonReady)
-  .then(el => {
-    if (!el) return;
+waitForElement(`${nativeButton(SIGN_IN_SELECTOR)}, ${nativeButton(FIDO_SELECTOR)}`, 50, 200, isButtonReady)
+  .then(btn => {
+    if (!btn) return;
 
-    clickButton(el);
+    clickElement(btn);
 
-    if (el.matches(FIDO_SELECTOR)) {
+    if (btn.closest(FIDO_SELECTOR)) {
       closeBitwardenPopup();
       return;
     }
 
-    waitForElement(FIDO_SELECTOR, 50, 200, isButtonReady)
-      .then(fidoEl => {
-        if (!fidoEl) return;
+    return waitForElement(nativeButton(FIDO_SELECTOR), 50, 200, isButtonReady)
+      .then(fidoBtn => {
+        if (fidoBtn) {
+          clickElement(fidoBtn);
+        } else {
+          writeLog('passkey button never became ready');
+        }
 
-        clickButton(fidoEl);
+        // Sent either way: signing in can raise the Bitwarden popup on its
+        // own, and leaving it open blocks whatever the flow does next.
         closeBitwardenPopup();
       });
   });

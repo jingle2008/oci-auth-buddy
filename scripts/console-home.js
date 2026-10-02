@@ -73,6 +73,7 @@ function overrideTenancy(tenancy) {
                 return;
               }
 
+              writeLog(`overriding tenancy to ${tenancy}`);
               fillInputElement(el, tenancy);
 
               waitForElement('button[type="submit"]', 50, 200,

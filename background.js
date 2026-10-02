@@ -54,6 +54,46 @@ function pageLabel(sender) {
   }
 }
 
+// Bitwarden's own extension popup, which steals focus from the passkey
+// prompt. Only one listener is ever armed, and only for a short window: a
+// leftover listener would close a popup the user opened deliberately, and one
+// per passkey attempt would stack up for the life of the worker.
+const BW_PREFIX = 'chrome-extension://nngceckbapebfimnlniiiahkandclblb/popup';
+const BW_WINDOW_MS = 15000;
+
+let bwHandler = null;
+let bwTimer = null;
+
+function disarmBitwardenCloser() {
+  if (bwHandler) {
+    chrome.tabs.onCreated.removeListener(bwHandler);
+    bwHandler = null;
+  }
+  if (bwTimer) {
+    clearTimeout(bwTimer);
+    bwTimer = null;
+  }
+}
+
+function armBitwardenCloser() {
+  disarmBitwardenCloser();
+
+  bwHandler = tab => {
+    if (!tab.url || !tab.url.startsWith(BW_PREFIX)) return;
+
+    // Removing the tab can already close its window, so both removals are
+    // allowed to fail without raising an unhandled rejection.
+    Promise.resolve(chrome.tabs.remove(tab.id)).catch(() => {});
+    if (tab.windowId && tab.openerTabId == null) {
+      Promise.resolve(chrome.windows.remove(tab.windowId)).catch(() => {});
+    }
+    disarmBitwardenCloser();
+  };
+
+  chrome.tabs.onCreated.addListener(bwHandler);
+  bwTimer = setTimeout(disarmBitwardenCloser, BW_WINDOW_MS);
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || !msg.type) return;
 
@@ -77,18 +117,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     chrome.tabs.remove(sender.tab.id);
   }
   else if (msg.type === 'CLOSE_BW') {
-    // this is bitwarden chrome extension
-    const BW_PREFIX = 'chrome-extension://nngceckbapebfimnlniiiahkandclblb/popup';
-    function handler(tab) {
-      if (tab.url && tab.url.startsWith(BW_PREFIX)) {
-        chrome.tabs.remove(tab.id);
-        if (tab.windowId && tab.openerTabId == null) {
-          chrome.windows.remove(tab.windowId);
-        }
-        chrome.tabs.onCreated.removeListener(handler);
-      }
-    }
-    chrome.tabs.onCreated.addListener(handler);
+    armBitwardenCloser();
     sendResponse({ ok: true });
     return true;
   }

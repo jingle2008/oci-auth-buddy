@@ -140,7 +140,10 @@ function fillInputElement(el, value) {
 
   el.value = value;
   el.dispatchEvent(new Event('input', { bubbles: true }));
-  writeLog(`filled ${describeElement(el)} with "${value}"`);
+  // The value itself is not logged: this helper is one call away from a
+  // password, one-time code or recovery code field, and log entries are
+  // persisted to disk. Callers log the value when it is not sensitive.
+  writeLog(`filled ${describeElement(el)} with ${value.length} character(s)`);
 }
 
 // Announce the page as soon as the script is injected, before any script's
