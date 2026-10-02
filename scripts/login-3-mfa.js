@@ -22,9 +22,17 @@ function isButtonReady(btn) {
     && !(wrapper && wrapper.classList.contains('oj-disabled'));
 }
 
-function closeBitwardenPopup() {
-  writeLog('requesting Bitwarden popup close');
+function watchForBitwardenPopup() {
+  writeLog('asking the worker to watch for the Bitwarden popup');
   chrome.runtime.sendMessage({ type: 'CLOSE_BW' });
+}
+
+// The watch is armed before the click, not after: Bitwarden opens its popup
+// as soon as the passkey prompt appears, and a watch armed afterwards can
+// miss the tab creation and then wait for a popup that already exists.
+function clickPasskey(btn) {
+  watchForBitwardenPopup();
+  clickElement(btn);
 }
 
 // The sign-in step and the passkey step can share one document, since JET
@@ -34,23 +42,22 @@ waitForElement(`${nativeButton(SIGN_IN_SELECTOR)}, ${nativeButton(FIDO_SELECTOR)
   .then(btn => {
     if (!btn) return;
 
-    clickElement(btn);
-
     if (btn.closest(FIDO_SELECTOR)) {
-      closeBitwardenPopup();
+      clickPasskey(btn);
       return;
     }
 
+    clickElement(btn);
+
     return waitForElement(nativeButton(FIDO_SELECTOR), 50, 200, isButtonReady)
       .then(fidoBtn => {
-        if (fidoBtn) {
-          clickElement(fidoBtn);
-        } else {
+        if (!fidoBtn) {
           writeLog('passkey button never became ready');
+          // Signing in can raise the Bitwarden popup on its own.
+          watchForBitwardenPopup();
+          return;
         }
 
-        // Sent either way: signing in can raise the Bitwarden popup on its
-        // own, and leaving it open blocks whatever the flow does next.
-        closeBitwardenPopup();
+        clickPasskey(fidoBtn);
       });
   });

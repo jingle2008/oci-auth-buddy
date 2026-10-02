@@ -17,6 +17,12 @@ let queue = chrome.storage.local.get('authLogs')
   .then(result => { messages = Array.isArray(result.authLogs) ? result.authLogs : []; })
   .catch(() => { messages = []; });
 
+function record(page, message) {
+  const entry = { time: new Date().toISOString(), page, message };
+  appendLog(entry);
+  console.log(`${entry.time} [${entry.page}] ${entry.message}`);
+}
+
 function appendLog(entry) {
   queue = queue
     .then(() => {
@@ -55,56 +61,82 @@ function pageLabel(sender) {
 }
 
 // Bitwarden's own extension popup, which steals focus from the passkey
-// prompt. Only one listener is ever armed, and only for a short window: a
+// prompt. Only one watch is ever armed, and only for a short window: a
 // leftover listener would close a popup the user opened deliberately, and one
 // per passkey attempt would stack up for the life of the worker.
 const BW_PREFIX = 'chrome-extension://nngceckbapebfimnlniiiahkandclblb/popup';
-const BW_WINDOW_MS = 15000;
+const BW_WINDOW_MS = 20000;
 
-let bwHandler = null;
+let bwCreated = null;
+let bwUpdated = null;
 let bwTimer = null;
 
-function disarmBitwardenCloser() {
-  if (bwHandler) {
-    chrome.tabs.onCreated.removeListener(bwHandler);
-    bwHandler = null;
+function isBitwardenPopup(tab) {
+  // At creation a tab's url is usually still empty and the destination sits in
+  // pendingUrl, so matching url alone misses the popup entirely.
+  const url = tab && (tab.url || tab.pendingUrl);
+  return !!url && url.startsWith(BW_PREFIX);
+}
+
+function closeBitwardenTab(tab) {
+  record('service worker', `closing Bitwarden popup (tab ${tab.id})`);
+
+  // Removing the tab can already close its window, so both removals are
+  // allowed to fail without raising an unhandled rejection.
+  Promise.resolve(chrome.tabs.remove(tab.id)).catch(() => {});
+  if (tab.windowId && tab.openerTabId == null) {
+    Promise.resolve(chrome.windows.remove(tab.windowId)).catch(() => {});
+  }
+  disarmBitwardenCloser();
+}
+
+function disarmBitwardenCloser(reason) {
+  if (bwCreated) {
+    chrome.tabs.onCreated.removeListener(bwCreated);
+    bwCreated = null;
+  }
+  if (bwUpdated) {
+    chrome.tabs.onUpdated.removeListener(bwUpdated);
+    bwUpdated = null;
   }
   if (bwTimer) {
     clearTimeout(bwTimer);
     bwTimer = null;
   }
+  if (reason) record('service worker', reason);
 }
 
 function armBitwardenCloser() {
   disarmBitwardenCloser();
+  record('service worker', 'watching for the Bitwarden popup');
 
-  bwHandler = tab => {
-    if (!tab.url || !tab.url.startsWith(BW_PREFIX)) return;
+  bwCreated = tab => { if (isBitwardenPopup(tab)) closeBitwardenTab(tab); };
+  // Backstop: if the tab was created with no url yet and no pendingUrl, the
+  // url only arrives as an update.
+  bwUpdated = (id, changes, tab) => { if (isBitwardenPopup(tab)) closeBitwardenTab(tab); };
 
-    // Removing the tab can already close its window, so both removals are
-    // allowed to fail without raising an unhandled rejection.
-    Promise.resolve(chrome.tabs.remove(tab.id)).catch(() => {});
-    if (tab.windowId && tab.openerTabId == null) {
-      Promise.resolve(chrome.windows.remove(tab.windowId)).catch(() => {});
-    }
-    disarmBitwardenCloser();
-  };
+  chrome.tabs.onCreated.addListener(bwCreated);
+  chrome.tabs.onUpdated.addListener(bwUpdated);
+  bwTimer = setTimeout(
+    () => disarmBitwardenCloser(`no Bitwarden popup appeared within ${BW_WINDOW_MS / 1000}s`),
+    BW_WINDOW_MS);
 
-  chrome.tabs.onCreated.addListener(bwHandler);
-  bwTimer = setTimeout(disarmBitwardenCloser, BW_WINDOW_MS);
+  // The popup may already be open: the passkey prompt can raise it before the
+  // content script gets a chance to ask for this watch.
+  chrome.tabs.query({ url: `${BW_PREFIX}*` })
+    .then(tabs => {
+      if (!tabs.length) return;
+      record('service worker', `${tabs.length} Bitwarden popup tab(s) already open`);
+      tabs.forEach(closeBitwardenTab);
+    })
+    .catch(e => record('service worker', `could not query tabs: ${e.message}`));
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === 'WRITE_LOG') {
-    const entry = {
-      time: new Date().toISOString(),
-      page: pageLabel(sender),
-      message: msg.payload,
-    };
-    appendLog(entry);
-    console.log(`${entry.time} [${entry.page}] ${entry.message}`);
+    record(pageLabel(sender), msg.payload);
   }
   else if (msg.type === 'CLEAR_LOGS') {
     // The popup must not write storage directly: this worker holds the array
