@@ -2,7 +2,14 @@ const appTag = '[auth-buddy]';
 
 function writeLog(message) {
   try {
-    chrome.runtime.sendMessage({ type: 'WRITE_LOG', payload: message });
+    // Called without a callback, sendMessage returns a promise that rejects
+    // when there is no receiving end, e.g. just after the extension reloads.
+    // Without this the log line is lost silently and the rejection surfaces
+    // as an unhandled error instead of the warning below.
+    const sent = chrome.runtime.sendMessage({ type: 'WRITE_LOG', payload: message });
+    if (sent && typeof sent.catch === 'function') {
+      sent.catch(e => console.warn(appTag, 'Failed to log task:', e));
+    }
   } catch (e) {
     console.warn(appTag, 'Failed to log task:', e);
   }
@@ -97,7 +104,9 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
 
       if (++tries > maxTries) {
         cleanup();
-        writeLog(`gave up waiting for "${selector}" after ${maxTries * delay}ms`);
+        // One check runs before the interval starts, so the elapsed time is
+        // one interval longer than maxTries alone would suggest.
+        writeLog(`gave up waiting for "${selector}" after ${(maxTries + 1) * delay}ms`);
         resolve(null);
       }
     }, delay);

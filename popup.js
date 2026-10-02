@@ -39,7 +39,14 @@ function loadLogs() {
 }
 
 function clearLogs() {
-  chrome.storage.local.set({ authLogs: [] }, loadLogs);
+  // Clearing storage directly would leave the service worker holding the old
+  // entries, and its next write would bring all of them back.
+  chrome.runtime.sendMessage({ type: 'CLEAR_LOGS' }, () => {
+    if (chrome.runtime.lastError) {
+      console.warn('Failed to clear logs:', chrome.runtime.lastError.message);
+    }
+    loadLogs();
+  });
 }
 
 document.getElementById('refresh').onclick = loadLogs;
