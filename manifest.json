@@ -16,7 +16,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://signon-int.oracle.com/signin*"],
+      "matches": ["https://signon-int.oracle.com/signin*", "https://signon.oci.oracleiaas.com/signin*"],
       "js": ["helper.js", "scripts/login-3-mfa.js"],
       "run_at": "document_idle"
     },
@@ -41,6 +41,7 @@
     "https://login.oci.oraclecloud.com/*",
     "https://login.us-ashburn-1.oraclecloud.com/*",
     "https://signon-int.oracle.com/signin*",
+    "https://signon.oci.oracleiaas.com/signin*",
     "http://localhost:8181/*"
   ],
   "icons": {

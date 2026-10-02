@@ -66,12 +66,16 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
     // so polling does not flood the log with one entry per attempt.
     let loggedNotReady = false;
 
-    // Immediate first check
+    // Immediate first check. Every match is considered, not just the first:
+    // a selector can list several candidates, or match a stale hidden copy of
+    // the element before the live one, and only the predicate can tell which
+    // is the right target.
     const check = () => {
-      const el = document.querySelector(selector);
-      if (!el) return false;
+      const found = document.querySelectorAll(selector);
+      if (!found.length) return false;
 
-      if (!predicate || predicate(el)) {
+      const el = predicate ? Array.from(found).find(e => predicate(e)) : found[0];
+      if (el) {
         writeLog(`matched "${selector}": ${describeElement(el)}`);
         cleanup();
         resolve(el);
@@ -80,7 +84,7 @@ function waitForElement(selector, maxTries = 50, delay = 200, predicate = null, 
 
       if (!loggedNotReady) {
         loggedNotReady = true;
-        writeLog(`matched "${selector}" but not ready yet: ${describeElement(el)}`);
+        writeLog(`${found.length} element(s) matched "${selector}", none ready yet: ${describeElement(found[0])}`);
       }
       return false;
     };
