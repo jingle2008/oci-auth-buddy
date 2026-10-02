@@ -5,7 +5,7 @@ setTimeout(onPageReady, 500);
 
 function onPageReady() {
   // Continue with default email
-  const signInBtn = document.querySelector("'#idcs-signin-basic-signin-form-submit'");
+  const signInBtn = document.querySelector('#idcs-signin-basic-signin-form-submit');
   clickElement(signInBtn);
 
   // Continue with default passkey

@@ -1,22 +1,12 @@
 // https://login.us-ashburn-1.oraclecloud.com/
 
-// Wait for the script to run
-setTimeout(onPageReady, 500);
+// The page may render the domain submit or the federation submit button,
+// depending on which step of the SSO flow it is on, so wait for either one.
+const SUBMIT_SELECTOR = '#submit-domain, #submit-federation';
 
 function isButtonReady(el) {
-  return !el.disabled && el.offsetParent !== null
+  return !!el && !el.disabled && el.offsetParent !== null;
 }
 
-function onPageReady() {
-  // Continue SSO with SAML as provider
-  const submitBtn = document.querySelector("#submit-federation");
-  if (isButtonReady(submitBtn)) {
-    clickElement(submitBtn);
-  } else {
-    // TODO: need to check other buttons
-    // This is not hit right now
-    waitForElement('#submit-federation', 0, 200, isButtonReady)
-      .then(el => clickElement(el));
-  }
-}
-
+waitForElement(SUBMIT_SELECTOR, 50, 200, isButtonReady)
+  .then(el => clickElement(el));
